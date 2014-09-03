@@ -186,18 +186,20 @@ def get_seq_name(in_fasta):
 def create_merged_table(locus_ids, start_dir):
     merged_list = [ ]
     merged_list.append(locus_ids)
-    for infile in glob.glob(os.path.join(dir_path, "*.counts.txt")):
+    out_table = open("merged_table.txt", "w")
+    for infile in glob.glob(os.path.join(start_dir, "*.counts.txt")):
         sample_list = [ ]
         full_name = get_seq_name(infile)
         name = full_name.replace(".counts.txt", "")
-        merged_list.append(name)
+        sample_list.append(name)
         for line in open(infile, "U"):
             if line.startswith("__"):
                 pass
             else:
                 fields = line.split()
-                merged_list.append(fields[1])
-    print merged_list
+                sample_list.append(fields[1])
+        merged_list.append(sample_list)
+    return merged_list
                 
 def main(read_dir, reference, gff, processors):
     start_dir = os.getcwd()
@@ -223,6 +225,7 @@ def main(read_dir, reference, gff, processors):
     subprocess.check_call("bwa index %s > /dev/null 2>&1" % (ref_path), shell=True)
     fileSets=read_file_sets(dir_path)
     names = run_loop(fileSets, dir_path, "%s" % ref_path , processors, TRIM_PATH,BACSEQ_PATH, gff_path)
+    """print out names, which will be important for the next step"""
     outfile = open("names.txt", "w")
     print >> outfile, "\n".join(names)
     sample_name = names[0]
@@ -237,7 +240,7 @@ def main(read_dir, reference, gff, processors):
     create_merged_table(locus_ids, start_dir)
     try:
         os.system("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz")
-    else:
+    except:
         pass
              
 if __name__ == "__main__":
