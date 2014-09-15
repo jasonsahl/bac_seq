@@ -199,7 +199,10 @@ def create_merged_table(locus_ids, start_dir):
                 fields = line.split()
                 sample_list.append(fields[1])
         merged_list.append(sample_list)
-    return merged_list
+    test=map(list, zip(*merged_list))
+    for x in test:
+        print >> out_table, "\t".join(x)
+    out_table.close()
                 
 def main(read_dir, reference, gff, processors):
     start_dir = os.getcwd()
@@ -238,8 +241,9 @@ def main(read_dir, reference, gff, processors):
             fields = line.split()
             locus_ids.append(fields[0])
     create_merged_table(locus_ids, start_dir)
+    log_isg.logPrint('bac_seq finished')
     try:
-        os.system("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz")
+        subprocess.check_call("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz", shell=True, stderr=open(os.devnull, 'w'))
     except:
         pass
              
