@@ -46,7 +46,7 @@ def add_in_info_and_filter(infile, p_value, prefix_1, prefix_2):
     for line in infile:
         fields = line.split()
         if float(fields[-1])<=float(p_value):
-            print line,
+            print >> outfile, line,
         else:
             pass
     outfile.close()

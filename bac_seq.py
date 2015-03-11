@@ -230,7 +230,7 @@ def main(read_dir, reference, gff, processors):
     names = run_loop(fileSets, dir_path, "%s" % ref_path , processors, TRIM_PATH,BACSEQ_PATH, gff_path)
     """print out names, which will be important for the next step"""
     outfile = open("names.txt", "w")
-    print >> outfile, "\n".join(names)
+    #print >> outfile, "\n".join(names)
     sample_name = names[0]
     locus_ids = []
     locus_ids.append("")
@@ -241,6 +241,11 @@ def main(read_dir, reference, gff, processors):
             fields = line.split()
             locus_ids.append(fields[0])
     create_merged_table(locus_ids, start_dir)
+    #Create names file in the same order that they are in the merged_table
+    infile = open("merged_table.txt", "U")
+    firstLine = infile.readline()
+    FL_F=firstLine.split()
+    print >> outfile, "\n".join(FL_F)
     log_isg.logPrint('bac_seq finished')
     try:
         subprocess.check_call("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz", shell=True, stderr=open(os.devnull, 'w'))
