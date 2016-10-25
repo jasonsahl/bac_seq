@@ -53,12 +53,12 @@ def get_readFile_components(full_file_path):
     full_ext = ext2+ext
     return(file_path,file_name_before_ext,full_ext)
 
-def read_file_sets(dir_path):        
+def read_file_sets(dir_path):
     """match up pairs of sequence data, adapted from
     https://github.com/katholt/srst2 - untested"""
-    fileSets = {} 
+    fileSets = {}
     forward_reads = {}
-    reverse_reads = {} 
+    reverse_reads = {}
     num_paired_readsets = 0
     num_single_readsets = 0
     for infile in glob.glob(os.path.join(dir_path, "*.fastq.gz")):
@@ -99,9 +99,9 @@ def read_file_sets(dir_path):
             fileSets[sample] = reverse_reads[sample] # no forward found
             num_single_readsets += 1
             logging.info('Warning, could not find pair for read:' + reverse_reads[sample])
-                                
+
     if num_paired_readsets > 0:
-        logging.info('Total paired readsets found:' + str(num_paired_readsets))        
+        logging.info('Total paired readsets found:' + str(num_paired_readsets))
     if num_single_readsets > 0:
         logging.info('Total single reads found:' + str(num_single_readsets))
 
@@ -134,7 +134,7 @@ def bwa(reference,read1,read2,sam_file, processors, log_file='',**my_opts):
     if "NULL" in read2:
         mem_arguments.extend([reference,read1])
     else:
-        mem_arguments.extend([reference,read1,read2]) 
+        mem_arguments.extend([reference,read1,read2])
     if log_file:
        try:
            log_fh = open(log_file, 'w')
@@ -146,7 +146,7 @@ def bwa(reference,read1,read2,sam_file, processors, log_file='',**my_opts):
         sam_fh = open(sam_file, 'w')
     except:
         print sam_file, 'could not open'
- 
+
     bwa = Popen(mem_arguments, stderr=log_fh, stdout=sam_fh)
     bwa.wait()
 
@@ -179,6 +179,16 @@ def run_loop(fileSets, dir_path, reference, processors, trim_path, bac_path, gff
                     num_workers=processors))
     return names
 
+def run_kallisto_loop(fileSets,dir_path,reference,processors,bac_path):
+    files_and_temp_names = [(str(idx), list(f)) for idx, f in fileSets.iteritems()]
+    def _perform_workflow(data):
+        """idx is the sample name, f is the file dictionary"""
+        idx, f = data
+        subprocess.check_call("kallisto quant -o %s -i %s %s %s" % (idx,"REF",f[0],f[1]), shell=True)
+    set(p_func.pmap(_perform_workflow,
+                    files_and_temp_names,
+                    num_workers=processors))
+
 def get_seq_name(in_fasta):
     """used for renaming the sequences - tested"""
     return os.path.basename(in_fasta)
@@ -203,58 +213,71 @@ def create_merged_table(locus_ids, start_dir):
     for x in test:
         print >> out_table, "\t".join(x)
     out_table.close()
-                
+
 def main(read_dir, reference, gff, processors):
     start_dir = os.getcwd()
     log_isg.logPrint('testing the paths of all dependencies')
     ap=os.path.abspath("%s" % start_dir)
     """need to check the paths for all dependencies"""
-    ac = subprocess.call(['which', 'bwa'])
-    if ac == 0:
-        pass
-    else:
-        print "bwa must be in your path"
-        sys.exit()
-    ad = subprocess.call(['which', 'htseq-count'])
-    if ac == 0:
-        pass
-    else:
-        print "htseq-count must be in your path"
-        sys.exit()
+    if aligner == "bwa-mem":
+        ac = subprocess.call(['which','bwa'])
+        if ac == 0:
+            pass
+        else:
+            print "bwa must be in your path"
+            sys.exit()
+        ad = subprocess.call(['which', 'htseq-count'])
+        if ac == 0:
+            pass
+        else:
+            print "htseq-count must be in your path"
+            sys.exit()
+    elif aligner == "kallisto":
+        ac = subprocess.call(['which','kallisto'])
+        if ac == 0:
+            pass
+        else:
+            print "kallisto must be in your path"
+            sys.exit()
     log_isg.logPrint('bac_seq pipeline starting')
     ref_path=os.path.abspath("%s" % reference)
     dir_path=os.path.abspath("%s" % read_dir)
-    gff_path=os.path.abspath("%s" % gff)
-    subprocess.check_call("bwa index %s > /dev/null 2>&1" % (ref_path), shell=True)
+    if aligner == "bwa-mem":
+        gff_path=os.path.abspath("%s" % gff)
+        subprocess.check_call("bwa index %s > /dev/null 2>&1" % (ref_path), shell=True)
+    elif aligner == "kallisto":
+        subprocess.check_call("kallisto index %s -i REF" % ref_path, shell=True)
     fileSets=read_file_sets(dir_path)
-    names = run_loop(fileSets, dir_path, "%s" % ref_path , processors, TRIM_PATH,BACSEQ_PATH, gff_path)
-    """print out names, which will be important for the next step"""
-    outfile = open("names.txt", "w")
-    #print >> outfile, "\n".join(names)
-    sample_name = names[0]
-    locus_ids = []
-    locus_ids.append("")
-    for line in open("%s.counts.txt" % sample_name):
-        if line.startswith("__"):
+    if aligner == "bwa-mem":
+        names = run_loop(fileSets,dir_path,"%s" % ref_path,processors,TRIM_PATH,BACSEQ_PATH,gff_path)
+        """print out names, which will be important for the next step"""
+        outfile = open("names.txt", "w")
+        sample_name = names[0]
+        locus_ids = []
+        locus_ids.append("")
+        for line in open("%s.counts.txt" % sample_name):
+            if line.startswith("__"):
+                pass
+            else:
+                fields = line.split()
+                locus_ids.append(fields[0])
+        create_merged_table(locus_ids, start_dir)
+        #Create names file in the same order that they are in the merged_table
+        infile = open("merged_table.txt", "U")
+        firstLine = infile.readline()
+        FL_F=firstLine.split()
+        print >> outfile, "\n".join(FL_F)
+        log_isg.logPrint('bac_seq finished')
+        try:
+            subprocess.check_call("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz", shell=True, stderr=open(os.devnull, 'w'))
+        except:
             pass
-        else:
-            fields = line.split()
-            locus_ids.append(fields[0])
-    create_merged_table(locus_ids, start_dir)
-    #Create names file in the same order that they are in the merged_table
-    infile = open("merged_table.txt", "U")
-    firstLine = infile.readline()
-    FL_F=firstLine.split()
-    print >> outfile, "\n".join(FL_F)
-    log_isg.logPrint('bac_seq finished')
-    try:
-        subprocess.check_call("rm *.fasta.* *.log *.trimmomatic.out *.paired.fastq.gz *.unpaired.fastq.gz", shell=True, stderr=open(os.devnull, 'w'))
-    except:
-        pass
-             
+    else:
+        run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+
 if __name__ == "__main__":
     usage="usage: %prog [options]"
-    parser = OptionParser(usage=usage) 
+    parser = OptionParser(usage=usage)
     parser.add_option("-d", "--read_dir", dest="read_dir",
                       help="directory of FASTQ reads [REQUIRED]",
                       action="callback", callback=test_dir, type="string")
@@ -262,18 +285,21 @@ if __name__ == "__main__":
                       help="reference genome in FASTA format [REQUIRED]",
                       action="callback", callback=test_file, type="string")
     parser.add_option("-g", "--gff_file", dest="gff",
-                      help="GFF file for reference genome [REQUIRED]",
+                      help="GFF file for reference genome, only required for BWA-MEM",
                       action="callback", callback=test_file, type="string")
+    parser.add_option("-a", "--aligner", dest="aligner",
+                      help="aligner to use [kallisto, bwa-mem]; defaults to kallisto",
+                      action="store", default="kallisto", type="string")
     parser.add_option("-p", "--processors", dest="processors",
                       help="number of processors to use, defaults to 4",
                       action="store", default="4", type="int")
     options, args = parser.parse_args()
-    
-    mandatories = ["read_dir", "reference", "gff"]
+
+    mandatories = ["read_dir","reference"]
     for m in mandatories:
         if not options.__dict__[m]:
             print "\nMust provide %s.\n" %m
             parser.print_help()
             exit(-1)
 
-    main(options.read_dir,options.reference,options.gff,options.processors)
+    main(options.read_dir,options.reference,options.gff,options.aligner,options.processors)
