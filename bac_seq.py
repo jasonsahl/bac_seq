@@ -280,7 +280,7 @@ def main(read_dir,reference,gff,aligner,processors):
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
         for name in names:
-            for line in open("%s/abundance.tsv" % sample_name):
+            for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
                     pass
