@@ -19,7 +19,7 @@ except:
     sys.exit()
 
 
-BACSEQ_PATH="/scratch/jsahl/tools/bac_seq"
+BACSEQ_PATH="/common/contrib/tools/bac_seq"
 if os.path.exists(BACSEQ_PATH):
     sys.path.append("%s" % BACSEQ_PATH)
 else:
@@ -181,13 +181,16 @@ def run_loop(fileSets, dir_path, reference, processors, trim_path, bac_path, gff
 
 def run_kallisto_loop(fileSets,dir_path,reference,processors,bac_path):
     files_and_temp_names = [(str(idx), list(f)) for idx, f in fileSets.iteritems()]
+    names = []
     def _perform_workflow(data):
         """idx is the sample name, f is the file dictionary"""
         idx, f = data
         subprocess.check_call("kallisto quant -o %s -i %s %s %s" % (idx,"REF",f[0],f[1]), shell=True)
+        names.append(idx)
     set(p_func.pmap(_perform_workflow,
                     files_and_temp_names,
                     num_workers=processors))
+    return names
 
 def get_seq_name(in_fasta):
     """used for renaming the sequences - tested"""
@@ -273,7 +276,18 @@ def main(read_dir,reference,gff,aligner,processors):
         except:
             pass
     else:
-        run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        #Now I need to create the same matrix that comes out of BWA-MEM
+        count_dir = ()
+        for name in names:
+            for line in open("%s/abundance.tsv" % sample_name):
+                newline=line.strip()
+                if line.startswith.("target_id"):
+                    pass
+                else:
+                    fields=newline.split()
+                    count_dir=((name,fields[0],fields[3]))+count_dir
+        print(count_dir)
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
