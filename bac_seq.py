@@ -282,7 +282,7 @@ def main(read_dir,reference,gff,aligner,processors):
         for name in names:
             for line in open("%s/abundance.tsv" % sample_name):
                 newline=line.strip()
-                if line.startswith.("target_id"):
+                if line.startswith("target_id"):
                     pass
                 else:
                     fields=newline.split()
