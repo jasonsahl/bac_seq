@@ -281,18 +281,20 @@ def main(read_dir,reference,gff,aligner,processors):
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
         for name in names:
+            tmp_file = open("%s.tmp.xyx" % name, "w")
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
                     pass
                 else:
                     fields=newline.split()
-                    count_dir=((name,fields[0],fields[3]))+count_dir
+                    count_dir=((name,fields[0],fields[3]),)+count_dir
         names.insert(0,"")
         outfile.write("\t".join(names)+"\n")
-        print count_dir
-        #for entry in count_dir:
-
+        marker_list = []
+        for entry in count_dir:
+            marker_list.append(entry[1])
+        print marker_list
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
