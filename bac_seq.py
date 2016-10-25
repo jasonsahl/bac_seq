@@ -294,7 +294,8 @@ def main(read_dir,reference,gff,aligner,processors):
         marker_list = []
         for entry in count_dir:
             marker_list.append(entry[1])
-        print marker_list
+        nr=[x for i, x in enumerate(marker_list) if x not in marker_list[i+1:]]
+        print nr
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
