@@ -277,6 +277,7 @@ def main(read_dir,reference,gff,aligner,processors):
             pass
     else:
         names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        outfile=open("kallisto_merged_counts.txt", "w")
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
         for name in names:
@@ -288,10 +289,10 @@ def main(read_dir,reference,gff,aligner,processors):
                     fields=newline.split()
                     count_dir=((name,fields[0],fields[3]))+count_dir
         names.insert(0,"")
-        print("\t".join(names))
+        outfile.write("\t".join(names)+"\n")
+        print count_dir
         #for entry in count_dir:
 
-        #print(count_dir)
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
