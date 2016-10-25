@@ -214,7 +214,7 @@ def create_merged_table(locus_ids, start_dir):
         print >> out_table, "\t".join(x)
     out_table.close()
 
-def main(read_dir, reference, gff, processors):
+def main(read_dir,reference,gff,aligner,processors):
     start_dir = os.getcwd()
     log_isg.logPrint('testing the paths of all dependencies')
     ap=os.path.abspath("%s" % start_dir)
