@@ -287,7 +287,11 @@ def main(read_dir,reference,gff,aligner,processors):
                 else:
                     fields=newline.split()
                     count_dir=((name,fields[0],fields[3]))+count_dir
-        print(count_dir)
+        names.insert(0,"")
+        print("\t".join(names))
+        #for entry in count_dir:
+
+        #print(count_dir)
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
