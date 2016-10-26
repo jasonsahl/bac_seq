@@ -19,7 +19,7 @@ except:
     sys.exit()
 
 
-BACSEQ_PATH="/common/contrib/tools/bac_seq"
+BACSEQ_PATH="/Users/jasonsahl/tools/bac_seq"
 if os.path.exists(BACSEQ_PATH):
     sys.path.append("%s" % BACSEQ_PATH)
 else:
@@ -185,7 +185,7 @@ def run_kallisto_loop(fileSets,dir_path,reference,processors,bac_path):
     def _perform_workflow(data):
         """idx is the sample name, f is the file dictionary"""
         idx, f = data
-        subprocess.check_call("kallisto quant -o %s -i %s %s %s" % (idx,"REF",f[0],f[1]), shell=True)
+        subprocess.check_call("kallisto quant -o %s -i %s %s %s > /dev/null 2>&1" % (idx,"REF",f[0],f[1]), shell=True)
         names.append(idx)
     set(p_func.pmap(_perform_workflow,
                     files_and_temp_names,
@@ -249,7 +249,7 @@ def main(read_dir,reference,gff,aligner,processors):
         gff_path=os.path.abspath("%s" % gff)
         subprocess.check_call("bwa index %s > /dev/null 2>&1" % (ref_path), shell=True)
     elif aligner == "kallisto":
-        subprocess.check_call("kallisto index %s -i REF" % ref_path, shell=True)
+        subprocess.check_call("kallisto index %s -i REF > /dev/null 2>&1" % ref_path, shell=True)
     fileSets=read_file_sets(dir_path)
     if aligner == "bwa-mem":
         names = run_loop(fileSets,dir_path,"%s" % ref_path,processors,TRIM_PATH,BACSEQ_PATH,gff_path)
@@ -276,12 +276,12 @@ def main(read_dir,reference,gff,aligner,processors):
         except:
             pass
     else:
+        log_isg.logPrint("running kallisto")
         names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
-        outfile=open("kallisto_merged_counts.txt", "w")
+        #outfile=open("kallisto_merged_counts.txt", "w")
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
         for name in names:
-            tmp_file = open("%s.tmp.xyx" % name, "w")
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
@@ -289,13 +289,42 @@ def main(read_dir,reference,gff,aligner,processors):
                 else:
                     fields=newline.split()
                     count_dir=((name,fields[0],fields[3]),)+count_dir
+        log_isg.logPrint("processing results")
         names.insert(0,"")
-        outfile.write("\t".join(names)+"\n")
+        #outfile.write("\t".join(names)+"\n")
+        #outfile.close()
         marker_list = []
         for entry in count_dir:
             marker_list.append(entry[1])
+        #print count_dir
         nr=[x for i, x in enumerate(marker_list) if x not in marker_list[i+1:]]
-        print nr
+        """I will need to make sure that these are ordered in the same way as they are in marker_list"""
+        ref_out = open("ref.list", "w")
+        ref_out.write(""+'\n')
+        for entry in nr:
+            ref_out.write(entry+"\n")
+        ref_out.close()
+        for name in names:
+            outfile = open("%s.xyx" % name, "w")
+            values = []
+            for entry in nr:
+                for atuple in count_dir:
+                    if entry == atuple[1] and name == atuple[0]:
+                        values.append(atuple[2])
+            values.insert(0,name)
+            outfile.write("\n".join(values))
+            outfile.close()
+        os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
+        os.system("rm ref.list *xyx")
+            #            genome_hits.append(str(atuple[2]))
+            #    hits.append(genome_hits)
+            #for hit in hits:
+            #    outfile.write("\t".join(hit)+"\n")
+        #outfile.close()
+        #os.system("paste ref.list results.tmp.xyx > body.xyx")
+        #os.system("cat kallisto_merged_counts.txt body.xyx > combined.xyx")
+        #os.system("mv combined.xyx kallisto_merged_counts.txt")
+        #os.system("rm ref.list results.tmp.xyx body.xyx")
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
