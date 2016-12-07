@@ -288,7 +288,7 @@ def main(read_dir,reference,gff,aligner,processors):
                     pass
                 else:
                     fields=newline.split()
-                    count_dir=((name,fields[0],int(fields[3])),)+count_dir
+                    count_dir=((name,fields[0],float(fields[3])),)+count_dir
         log_isg.logPrint("processing results")
         names.insert(0,"")
         #outfile.write("\t".join(names)+"\n")
@@ -310,7 +310,7 @@ def main(read_dir,reference,gff,aligner,processors):
             for entry in nr:
                 for atuple in count_dir:
                     if entry == atuple[1] and name == atuple[0]:
-                        values.append(atuple[2])
+                        values.append(int(atuple[2]))
             values.insert(0,name)
             outfile.write("\n".join(values))
             outfile.close()
