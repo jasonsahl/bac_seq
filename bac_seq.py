@@ -312,7 +312,8 @@ def main(read_dir,reference,gff,aligner,processors):
                     if entry == atuple[1] and name == atuple[0]:
                         values.append(int(atuple[2]))
             values.insert(0,name)
-            outfile.write("\n".join(values))
+            #outfile.write("\n".join(values))
+            outfile.write("\n".join(str(values)))
             outfile.close()
         os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
         os.system("rm ref.list *xyx")
