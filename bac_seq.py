@@ -210,7 +210,7 @@ def create_merged_table(locus_ids, start_dir):
                 pass
             else:
                 fields = line.split()
-                sample_list.append(fields[1])
+                sample_list.append(int(fields[1]))
         merged_list.append(sample_list)
     test=map(list, zip(*merged_list))
     for x in test:

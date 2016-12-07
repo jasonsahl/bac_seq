@@ -15,11 +15,21 @@ def test_file(option, opt_str, value, parser):
         print '%s file cannot be opened' % option
         sys.exit()
 
-def get_conds(conditions):
+def get_conds(conditions,table):
+    cond_dict = {}
+    condition_fields = []
     for line in open(conditions, "U"):
-        fields = line.split()
-    return fields    
-        
+        newline = line.strip()
+        fields = newline.split()
+        cond_dict.update({fields[0]:fields[1]})
+    """Read in first line of the table"""
+    firstLine = open(table).readline()
+    first_fields = firstLine.split()
+    for first_field in first_fields:
+        if first_field in cond_dict:
+            condition_fields.append(cond_dict.get(first_field))
+    return condition_fields
+
 def get_loci(merged_table):
     loci = []
     loci.append("")
@@ -51,26 +61,30 @@ def add_in_info_and_filter(infile, p_value, prefix_1, prefix_2):
             pass
     outfile.close()
     infile.close()
-            
+
 def main(merged_table, conditions, R_file, p_value):
     table_path = os.path.abspath("%s" % merged_table)
     conds_path = os.path.abspath("%s" % conditions)
     R_path = os.path.abspath("%s" % R_file)
-    conds = get_conds(conds_path)
+    """The conditions file should look like: sample metadata"""
+    conds = get_conds(conds_path,table_path)
     loci = get_loci(table_path)
     unique_conds = [x for i, x in enumerate(conds) if x not in conds[i+1:]]
+    tmp_conditions = open("conditions.txt.xzx", "w")
+    tmp_conditions.write("\t".join(conds)+"\n")
+    tmp_conditions.close()
     for i in range(len(unique_conds)):
         print "processing %s compared to %s" % (unique_conds[i], unique_conds[i-1])
-        subprocess.check_call("Rscript %s %s %s %s %s > /dev/null 2>&1" % (R_path,table_path,conds_path,unique_conds[i],unique_conds[i-1]), shell=True)
+        subprocess.check_call("Rscript %s %s %s %s %s > /dev/null 2>&1" % (R_path,table_path,"conditions.txt.xzx",unique_conds[i],unique_conds[i-1]), shell=True)
         add_loci_to_output(loci, "all_results.txt")
         os.system("awk '!/NA/' out.txt.xzx | sort -g -k 10,10 > %s_%s_all_sorted.txt" % (unique_conds[i],unique_conds[i-1]))
         add_in_info_and_filter("%s_%s_all_sorted.txt" % (unique_conds[i],unique_conds[i-1]), p_value, unique_conds[i], unique_conds[i-1])
         os.system("rm out.txt.xzx all_results.txt")
-        
+
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
-    parser = OptionParser(usage=usage) 
+    parser = OptionParser(usage=usage)
     parser.add_option("-t", "--merged_table", dest="merged_table",
                       help="path to merged table [REQUIRED]",
                       action="callback", callback=test_file, type="string")
@@ -84,7 +98,7 @@ if __name__ == "__main__":
                       help="minimum p value, defaults to 0.05",
                       action="store", default="0.05", type="float")
     options, args = parser.parse_args()
-    
+
     mandatories = ["merged_table", "conditions", "R_file"]
     for m in mandatories:
         if not options.__dict__[m]:
@@ -94,4 +108,3 @@ if __name__ == "__main__":
 
     main(options.merged_table,options.conditions,options.R_file,
          options.p_value)
-
