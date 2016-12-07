@@ -313,7 +313,9 @@ def main(read_dir,reference,gff,aligner,processors):
                         values.append(int(atuple[2]))
             values.insert(0,name)
             #outfile.write("\n".join(values))
-            outfile.write("\n".join(str(values)))
+            """I will need to convert this entire list to strings"""
+            newvalues = [str(i) for i in values]
+            outfile.write("\n".join(newvalues))
             outfile.close()
         os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
         os.system("rm ref.list *xyx")
