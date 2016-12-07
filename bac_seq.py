@@ -310,7 +310,7 @@ def main(read_dir,reference,gff,aligner,processors):
             for entry in nr:
                 for atuple in count_dir:
                     if entry == atuple[1] and name == atuple[0]:
-                        values.append(atuple[2])
+                        values.append(int(atuple[2]))
             values.insert(0,name)
             outfile.write("\n".join(values))
             outfile.close()
