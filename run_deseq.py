@@ -73,12 +73,19 @@ def main(merged_table, conditions, R_file, p_value):
     tmp_conditions = open("conditions.txt.xzx", "w")
     tmp_conditions.write("\t".join(conds)+"\n")
     tmp_conditions.close()
-    for i in range(len(unique_conds)):
-        print "processing %s compared to %s" % (unique_conds[i], unique_conds[i-1])
-        subprocess.check_call("Rscript %s %s %s %s %s > /dev/null 2>&1" % (R_path,table_path,"conditions.txt.xzx",unique_conds[i],unique_conds[i-1]), shell=True)
+    test=list(range(len(unique_conds)))
+    from itertools import permutations
+    print unique_conds
+    for p in permutations(unique_conds, 2):
+        """This will look like [0,1,2,3,4], index starts at 0"""
+        print "processing %s compared to %s" % (p[0], p[1])
+        try:
+            subprocess.check_call("Rscript %s %s %s %s %s > /dev/null 2>&1" % (R_path,table_path,"conditions.txt.xzx",p[0],p[1]), shell=True)
+        except:
+            print "problem with R script, try running local version instead"
         add_loci_to_output(loci, "all_results.txt")
-        os.system("awk '!/NA/' out.txt.xzx | sort -g -k 10,10 > %s_%s_all_sorted.txt" % (unique_conds[i],unique_conds[i-1]))
-        add_in_info_and_filter("%s_%s_all_sorted.txt" % (unique_conds[i],unique_conds[i-1]), p_value, unique_conds[i], unique_conds[i-1])
+        os.system("awk '!/NA/' out.txt.xzx | sort -g -k 10,10 > %s_%s_all_sorted.txt" % (p[0],p[1]))
+        add_in_info_and_filter("%s_%s_all_sorted.txt" % (p[0],p[1]), p_value, p[0], p[1])
         os.system("rm out.txt.xzx all_results.txt")
 
 
