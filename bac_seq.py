@@ -284,8 +284,11 @@ def main(read_dir,reference,gff,aligner,processors):
     else:
         log_isg.logPrint("running kallisto")
         names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        print names
+        log_isg.logPrint("kallisto finished")
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
+        log_isg.logPrint("parsing kallisto output")
         for name in names:
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
