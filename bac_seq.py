@@ -314,6 +314,7 @@ def main(read_dir,reference,gff,aligner,processors):
         count_dir = ()
         log_isg.logPrint("parsing kallisto output")
         for name in names:
+            print len(count_dir)
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
