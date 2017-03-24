@@ -18,14 +18,21 @@ except:
     print "PATH is not configured correctly"
     sys.exit()
 
-
 BACSEQ_PATH="/Users/jasonsahl/tools/bac_seq"
+
 if os.path.exists(BACSEQ_PATH):
     sys.path.append("%s" % BACSEQ_PATH)
 else:
     print "your BACSEQ_PATH path is not correct.  Edit the path in bac_seq.py and try again"
     sys.exit()
 TRIM_PATH=BACSEQ_PATH+"/bin/trimmomatic-0.30.jar"
+
+def mp_shell(func, params, numProc):
+    from multiprocessing import Pool
+    p = Pool(numProc)
+    out = p.map(func, params)
+    p.terminate()
+    return out
 
 def test_file(option, opt_str, value, parser):
     try:
@@ -180,6 +187,22 @@ def run_loop(fileSets, dir_path, reference, processors, trim_path, bac_path, gff
                     num_workers=processors))
     return names
 
+def _perform_workflow_kallisto(data):
+    sequences = data[1]
+    if len(sequences) == 1:
+        subprocess.check_call("kallisto quant --single -l 100 -s 30 -o %s -i %s %s > /dev/null 2>&1" % (data[0],"REF","".join(sequences)),shell=True)
+    else:
+        subprocess.check_call("kallisto quant -o %s -i %s %s %s > /dev/null 2>&1" % (data[0],"REF",sequences[0],sequences[1]), shell=True)
+
+def run_kallisto_loop_dev(fileSets,dir_path,reference,processors,bac_path):
+    names = []
+    """"idx is the sample name, f is the file dictionary"""
+    files_and_temp_names = [(str(idx), list(f)) for idx, f in fileSets.iteritems()]
+    mp_shell(_perform_workflow_kallisto, files_and_temp_names, processors)
+    for name in files_and_temp_names:
+        names.append(name[0])
+    return names
+
 def run_kallisto_loop(fileSets,dir_path,reference,processors,bac_path):
     files_and_temp_names = [(str(idx), list(f)) for idx, f in fileSets.iteritems()]
     names = []
@@ -284,6 +307,7 @@ def main(read_dir,reference,gff,aligner,processors):
     else:
         log_isg.logPrint("running kallisto")
         names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        #names=run_kallisto_loop_dev(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
         print names
         log_isg.logPrint("kallisto finished")
         #Now I need to create the same matrix that comes out of BWA-MEM
