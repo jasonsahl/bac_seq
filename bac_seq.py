@@ -3,6 +3,7 @@
 """RNA-seq pipeline for bacterial
 transcripts"""
 
+from __future__ import division
 from optparse import OptionParser
 import sys
 import os
@@ -12,12 +13,6 @@ import re
 import logging
 from subprocess import Popen
 import isg_logging as log_isg
-#ry:
-#    from igs.utils import logging as log_isg
-#    from igs.threading import functional as p_func
-#except:
-#    print "PATH is not configured correctly"
-#    sys.exit()
 
 BACSEQ_PATH="/Users/jasonsahl/tools/bac_seq"
 
@@ -314,7 +309,7 @@ def main(read_dir,reference,gff,aligner,processors):
         count_dir = ()
         log_isg.logPrint("parsing kallisto output")
         for name in names:
-            print len(count_dir)
+            #print len(count_dir)
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
@@ -334,7 +329,12 @@ def main(read_dir,reference,gff,aligner,processors):
         for entry in nr:
             ref_out.write(entry+"\n")
         ref_out.close()
+        """insert progress type meter"""
+        completed = []
+        num_samples = len(names)
         for name in names:
+            amount_completed = (len(completed)/num_samples)*100
+            print "percent completed = %s" % amount_completed
             outfile = open("%s.xyx" % name, "w")
             values = []
             for entry in nr:
@@ -346,6 +346,7 @@ def main(read_dir,reference,gff,aligner,processors):
             newvalues = [str(i) for i in values]
             outfile.write("\n".join(newvalues))
             outfile.close()
+            completed.append("1")
         os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
         os.system("rm ref.list *xyx")
 
