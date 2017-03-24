@@ -306,8 +306,8 @@ def main(read_dir,reference,gff,aligner,processors):
             pass
     else:
         log_isg.logPrint("running kallisto")
-        names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
-        #names=run_kallisto_loop_dev(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        #names=run_kallisto_loop(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
+        names=run_kallisto_loop_dev(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
         print names
         log_isg.logPrint("kallisto finished")
         #Now I need to create the same matrix that comes out of BWA-MEM
