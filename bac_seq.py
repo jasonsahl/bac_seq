@@ -308,8 +308,12 @@ def main(read_dir,reference,gff,aligner,processors):
         #Now I need to create the same matrix that comes out of BWA-MEM
         count_dir = ()
         log_isg.logPrint("parsing kallisto output")
+        completed = [ ]
+        num_samples = len(names)
         for name in names:
             #print len(count_dir)
+            amount_completed = (len(completed)/num_samples)*100
+            print "percent completed = %s" % amount_completed
             for line in open("%s/abundance.tsv" % name):
                 newline=line.strip()
                 if line.startswith("target_id"):
@@ -317,6 +321,7 @@ def main(read_dir,reference,gff,aligner,processors):
                 else:
                     fields=newline.split()
                     count_dir=((name,fields[0],float(fields[3])),)+count_dir
+            completed.append("1")
         log_isg.logPrint("processing results")
         names.insert(0,"")
         marker_list = []
@@ -330,11 +335,7 @@ def main(read_dir,reference,gff,aligner,processors):
             ref_out.write(entry+"\n")
         ref_out.close()
         """insert progress type meter"""
-        completed = []
-        num_samples = len(names)
         for name in names:
-            amount_completed = (len(completed)/num_samples)*100
-            print "percent completed = %s" % amount_completed
             outfile = open("%s.xyx" % name, "w")
             values = []
             for entry in nr:
@@ -346,7 +347,6 @@ def main(read_dir,reference,gff,aligner,processors):
             newvalues = [str(i) for i in values]
             outfile.write("\n".join(newvalues))
             outfile.close()
-            completed.append("1")
         os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
         os.system("rm ref.list *xyx")
 
