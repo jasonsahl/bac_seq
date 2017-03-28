@@ -241,6 +241,31 @@ def create_merged_table(locus_ids, start_dir):
         print >> out_table, "\t".join(x)
     out_table.close()
 
+def process_kallisto_dev(names):
+    for name in names:
+        outfile = open("%s.tmp" % name, "w")
+        outfile.write(str(name)+"\n")
+        for line in open("%s/abundance.tsv" % name):
+            newline=line.strip()
+            if line.startswith("target_id"):
+                pass
+            else:
+                fields=newline.split()
+                value = round(float(fields[3]))
+                outfile.write(str(int(value))+"\n")
+        outfile.close()
+
+def get_ref_fields(genome):
+    outfile = open("ref.list", "w")
+    outfile.write("target"+"\n")
+    for line in open("%s/abundance.tsv" % genome):
+        if line.startswith("target_id"):
+            pass
+        else:
+            fields=line.split()
+            outfile.write(fields[0]+"\n")
+    outfile.close()
+
 def main(read_dir,reference,gff,aligner,processors):
     start_dir = os.getcwd()
     log_isg.logPrint('testing the paths of all dependencies')
@@ -306,49 +331,52 @@ def main(read_dir,reference,gff,aligner,processors):
         names=run_kallisto_loop_dev(fileSets,dir_path,"REF",processors,BACSEQ_PATH)
         log_isg.logPrint("kallisto finished")
         #Now I need to create the same matrix that comes out of BWA-MEM
-        count_dir = ()
+        #count_dir = ()
         log_isg.logPrint("parsing kallisto output")
-        completed = [ ]
-        num_samples = len(names)
-        for name in names:
-            #print len(count_dir)
-            amount_completed = (len(completed)/num_samples)*100
-            print "percent completed = %s" % amount_completed
-            for line in open("%s/abundance.tsv" % name):
-                newline=line.strip()
-                if line.startswith("target_id"):
-                    pass
-                else:
-                    fields=newline.split()
-                    count_dir=((name,fields[0],float(fields[3])),)+count_dir
-            completed.append("1")
-        log_isg.logPrint("processing results")
-        names.insert(0,"")
-        marker_list = []
-        for entry in count_dir:
-            marker_list.append(entry[1])
-        nr=[x for i, x in enumerate(marker_list) if x not in marker_list[i+1:]]
+        #completed = [ ]
+        #num_samples = len(names)
+        process_kallisto_dev(names)
+        get_ref_fields(names[0])
+        #for name in names:
+        #    amount_completed = (len(completed)/num_samples)*100
+        #    print "percent completed = %s" % amount_completed
+        #    for line in open("%s/abundance.tsv" % name):
+        #        newline=line.strip()
+        #        if line.startswith("target_id"):
+        #            pass
+        #        else:
+        #            fields=newline.split()
+        #            count_dir=((name,fields[0],float(fields[3])),)+count_dir
+        #    completed.append("1")
+        #print count_dir
+        #log_isg.logPrint("processing results")
+        #names.insert(0,"")
+        #marker_list = []
+        #for entry in count_dir:
+        #    marker_list.append(entry[1])
+        #nr=[x for i, x in enumerate(marker_list) if x not in marker_list[i+1:]]
         """I will need to make sure that these are ordered in the same way as they are in marker_list"""
-        ref_out = open("ref.list", "w")
-        ref_out.write(""+'\n')
-        for entry in nr:
-            ref_out.write(entry+"\n")
-        ref_out.close()
+        #ref_out = open("ref.list", "w")
+        #ref_out.write(""+'\n')
+        #for entry in nr:
+        #   ref_out.write(entry+"\n")
+        #ref_out.close()
         """insert progress type meter"""
-        for name in names:
-            outfile = open("%s.xyx" % name, "w")
-            values = []
-            for entry in nr:
-                for atuple in count_dir:
-                    if entry == atuple[1] and name == atuple[0]:
-                        values.append(int(atuple[2]))
-            values.insert(0,name)
-            """I will need to convert this entire list to strings"""
-            newvalues = [str(i) for i in values]
-            outfile.write("\n".join(newvalues))
-            outfile.close()
-        os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
-        os.system("rm ref.list *xyx")
+        #for name in names:
+        #    outfile = open("%s.xyx" % name, "w")
+        #    values = []
+        #    for entry in nr:
+        #        for atuple in count_dir:
+        #            if entry == atuple[1] and name == atuple[0]:
+        #                values.append(int(atuple[2]))
+        #    values.insert(0,name)
+        #    """I will need to convert this entire list to strings"""
+        #    newvalues = [str(i) for i in values]
+        #    outfile.write("\n".join(newvalues))
+        #    outfile.close()
+        #os.system("paste ref.list *xyx > kallisto_merged_counts.txt")
+        os.system("paste ref.list *.tmp > kallisto_merged_counts.txt")
+        os.system("rm ref.list *.tmp")
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
