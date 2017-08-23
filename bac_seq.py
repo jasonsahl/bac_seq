@@ -4,6 +4,7 @@
 transcripts"""
 
 from __future__ import division
+from __future__ import print_function
 from optparse import OptionParser
 import sys
 import os
@@ -14,12 +15,13 @@ import logging
 from subprocess import Popen
 import isg_logging as log_isg
 
+"""Need to set this PATH to your installation directory"""
 BACSEQ_PATH="/Users/jasonsahl/tools/bac_seq"
 
 if os.path.exists(BACSEQ_PATH):
     sys.path.append("%s" % BACSEQ_PATH)
 else:
-    print "your BACSEQ_PATH path is not correct.  Edit the path in bac_seq.py and try again"
+    print("your BACSEQ_PATH path is not correct.  Edit the path in bac_seq.py and try again")
     sys.exit()
 TRIM_PATH=BACSEQ_PATH+"/bin/trimmomatic-0.30.jar"
 
@@ -34,15 +36,16 @@ def test_file(option, opt_str, value, parser):
     try:
         with open(value): setattr(parser.values, option.dest, value)
     except IOError:
-        print '%s file cannot be opened' % option
+        print('%s file cannot be opened' % option)
         sys.exit()
 
 def test_dir(option, opt_str, value, parser):
     if os.path.exists(value):
         setattr(parser.values, option.dest, value)
     else:
-        print "directory of fastqs cannot be found"
+        print("directory of fastqs cannot be found")
         sys.exit()
+
 def get_readFile_components(full_file_path):
     """function adapted from:
     https://github.com/katholt/srst2 - tested"""
@@ -79,7 +82,7 @@ def read_file_sets(dir_path):
                     (baseName,read) = m.groups()[0], m.groups()[1]
                     reverse_reads[baseName] = infile
                 else:
-                    print "Could not determine forward/reverse read status for input file %s" % infile
+                    print("Could not determine forward/reverse read status for input file %s" % infile)
         else:
             baseName, read  = m.groups()[0], m.groups()[3]
             if read == "_R1":
@@ -87,7 +90,7 @@ def read_file_sets(dir_path):
             elif read == "_R2":
                 reverse_reads[baseName] = infile
             else:
-                print "Could not determine forward/reverse read status for input file "
+                print("Could not determine forward/reverse read status for input file")
                 fileSets[file_name_before_ext] = infile
                 num_single_readsets += 1
     for sample in forward_reads:
@@ -103,12 +106,10 @@ def read_file_sets(dir_path):
             fileSets[sample] = reverse_reads[sample] # no forward found
             num_single_readsets += 1
             logging.info('Warning, could not find pair for read:' + reverse_reads[sample])
-
     if num_paired_readsets > 0:
         logging.info('Total paired readsets found:' + str(num_paired_readsets))
     if num_single_readsets > 0:
         logging.info('Total single reads found:' + str(num_single_readsets))
-
     return fileSets
 
 def run_trimmomatic(trim_path, processors, read_1, read_2, name, bac_path):
@@ -143,13 +144,13 @@ def bwa(reference,read1,read2,sam_file, processors, log_file='',**my_opts):
        try:
            log_fh = open(log_file, 'w')
        except:
-           print log_file, 'could not open'
+           print(log_file, 'could not open')
     else:
         log_fh = PIPE
     try:
         sam_fh = open(sam_file, 'w')
     except:
-        print sam_file, 'could not open'
+        print(sam_file, 'could not open')
 
     bwa = Popen(mem_arguments, stderr=log_fh, stdout=sam_fh)
     bwa.wait()
